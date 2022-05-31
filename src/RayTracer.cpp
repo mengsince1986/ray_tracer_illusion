@@ -1,9 +1,8 @@
 /*==================================================================================
-* COSC 363  Computer Graphics (2022)
-* Department of Computer Science and Software Engineering, University of Canterbury.
+* COSC 363 Assignment 2 (2022-S1)
 *
-* A basic ray tracer
-* See Lab06.pdf  for details.
+* Author: Meng Zhang (mzh103)
+* File: RayTracer.cpp
 *===================================================================================
 */
 #include <iostream>
@@ -19,12 +18,12 @@
 using namespace std;
 
 const float EDIST = 40.0;
-const int NUMDIV = 500; // default: 500
+const int NUMDIV = 600; // default: 500
 const int MAX_STEPS = 5;
-const float XMIN = -10.0;
-const float XMAX = 10.0;
-const float YMIN = -10.0;
-const float YMAX = 10.0;
+const float XMIN = -20.0;
+const float XMAX = 20.0;
+const float YMIN = -20.0;
+const float YMAX = 20.0;
 
 vector<SceneObject*> sceneObjects;
 
@@ -46,19 +45,36 @@ glm::vec3 trace(Ray ray, int step)
     if(ray.index == -1) return backgroundCol;		//no intersection
 	obj = sceneObjects[ray.index];					//object on which the closest point of intersection is found
 
-    // add strpe pattern for floor plane object
+    // 1.(e) ADD CHEQUERED PATTERN FOR FLOOR PLANE OBJECT
     if (ray.index == 4)      // suppse the index of the floor plane is 4
     {
-        //Stripe pattern
-        int stripeWidth = 5;
-        int iz = (ray.hit.z) / stripeWidth;
-        int k = iz % 2;
-        //2 colors
-        if (k == 0) color = glm::vec3(0, 1, 0);
-        else color = glm::vec3(1, 1, 0.5);
+        int squareWidth = 5;
+        glm::vec3 dark = glm::vec3(0.2, 0.2, 0.2);
+        glm::vec3 light = glm::vec3(0.8, 0.8, 0.8);
+        bool isKzSolid;
+        bool isKxSolid;
+        //  z-axis (iz is always negative)
+        int iz = (ray.hit.z) / squareWidth;
+        int kz = iz % 2;
+        isKzSolid = kz == 0;
+        //  x-axis (ix is neither positive or negative and can be 0)
+        int ix = (ray.hit.x) / squareWidth;
+        int kx = ix % 2;        
+        if (ray.hit.x >= 0) {
+            isKxSolid =  kx == 0;
+        } else {
+            isKxSolid = kx != 0;
+        }
+        
+        if ((isKzSolid && isKxSolid) || (!isKzSolid  && !isKxSolid)) {
+            color = dark;   
+        } else {
+            color = light;
+        }
         obj->setColor(color);
 
         //Add code for texture mapping
+        /*
         float x1 = -15;  // based on fig.10 on page6 lab07 doc
         float x2 = 5;
         float z1 = -60;
@@ -71,12 +87,14 @@ glm::vec3 trace(Ray ray, int step)
             color=texture.getColorAt(texcoords, texcoordt);
             obj->setColor(color);
         }
+        */
     }
-    
+
+    // ADD LIGHTING
 	// color = obj->getColor();						//Object's colour
     color = obj->lighting(lightPos, -ray.dir, ray.hit);
 
-    // add shadows
+    // ADD SHADOWS
     glm::vec3 lightVec = lightPos - ray.hit;
     Ray shadowRay(ray.hit, lightVec);  // Create a shadow ray
     shadowRay.closestPt(sceneObjects);  // find the closest point of intersect
@@ -85,7 +103,7 @@ glm::vec3 trace(Ray ray, int step)
         color = 0.2f * obj->getColor();  //set color to be shdow. 0.2 = ambient scale factor
     }
 
-    // add reflectivity
+    // ADD REFLECTIVITY
     if (obj->isReflective() && step < MAX_STEPS)
     {
         float rho = obj->getReflectionCoeff();
@@ -95,7 +113,6 @@ glm::vec3 trace(Ray ray, int step)
         glm::vec3 reflectedColor = trace(reflectedRay, step + 1);
         color = color + (rho * reflectedColor);
     }
-
 
 	return color;
 }
@@ -159,34 +176,34 @@ void initialize()
 
     glClearColor(0, 0, 0, 1);
 
-    // sphere 1
-    Sphere *sphere1 = new Sphere(glm::vec3(-5.0, 0.0, -90.0), 15.0);
+    // 0:sphere 1
+    Sphere *sphere1 = new Sphere(glm::vec3(-5.0, 0.0, -90.0), 10.0);
 	sphere1->setColor(glm::vec3(0, 0, 1));   //Set colour to blue
 	sceneObjects.push_back(sphere1);		 //Add sphere to scene objects
     // sphere1->setSpecularity(false);      // suppress reflections
     // sphere1->setShininess(5);              // set shininess
     sphere1->setReflectivity(true, 0.8);   // set reflectivity
 
-    // sphere 2
+    // 1:sphere 2
     Sphere *sphere2 = new Sphere(glm::vec3(5.0, 5.0, -70.0), 4.0);
 	sphere2->setColor(glm::vec3(1, 0, 0));   //Set colour to red
 	sceneObjects.push_back(sphere2);		 //Add sphere to scene objects
 
-    // sphere 3
-    Sphere *sphere3 = new Sphere(glm::vec3(5.0, -10.0, -60.0), 5.0);
+    // 2:sphere 3
+    Sphere *sphere3 = new Sphere(glm::vec3(5.0, -10.0, -60.0), 4.0);
 	sphere3->setColor(glm::vec3(0, 1, 0));   //Set colour to green
 	sceneObjects.push_back(sphere3);		 //Add sphere to scene objects
 
-    // sphere 4
+    // 3:sphere 4
     Sphere *sphere4 = new Sphere(glm::vec3(10.0, 10.0, -60.0), 3.0);
 	sphere4->setColor(glm::vec3(0, 1, 1));   //Set colour to Cyan
 	sceneObjects.push_back(sphere4);		 //Add sphere to scene objects
 
-    // plane
-    Plane *plane = new Plane (glm::vec3(-20., -15, -40),  // Point A
-                              glm::vec3(20., -15, -40),  // Point B
-                              glm::vec3(20., -15, -200),  // Point C
-                              glm::vec3(-20., -15, -200));  // Point D
+    // 4:plane
+    Plane *plane = new Plane (glm::vec3(-30., -15, -40),  // Point A
+                              glm::vec3(30., -15, -40),  // Point B
+                              glm::vec3(30., -15, -200),  // Point C
+                              glm::vec3(-30., -15, -200));  // Point D
     plane->setColor(glm::vec3(0.8, 0.8, 0));
     plane->setSpecularity(false);  // turnoff specularity property
     sceneObjects.push_back(plane);
