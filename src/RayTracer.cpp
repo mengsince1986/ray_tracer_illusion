@@ -37,7 +37,8 @@ TextureBMP texture;
 glm::vec3 trace(Ray ray, int step)
 {
 	glm::vec3 backgroundCol(0);						//Background colour = (0,0,0)
-	glm::vec3 lightPos(10, 40, -3);					//Light's position
+	glm::vec3 lightPos(10, 30, -3);					//Light's position
+	glm::vec3 extraLightPos(-20, 30, -3);					//Extra light's position    
 	glm::vec3 color(0);
 	SceneObject* obj;
 
@@ -46,7 +47,7 @@ glm::vec3 trace(Ray ray, int step)
 	obj = sceneObjects[ray.index];					//object on which the closest point of intersection is found
 
     // 1.(e) ADD CHEQUERED PATTERN FOR FLOOR PLANE OBJECT
-    if (ray.index == 4)      // suppse the index of the floor plane is 4
+    if (ray.index == 0)      // suppse the index of the floor plane is 4
     {
         int squareWidth = 5;
         glm::vec3 dark = glm::vec3(0.2, 0.2, 0.2);
@@ -59,15 +60,15 @@ glm::vec3 trace(Ray ray, int step)
         isKzSolid = kz == 0;
         //  x-axis (ix is neither positive or negative and can be 0)
         int ix = (ray.hit.x) / squareWidth;
-        int kx = ix % 2;        
+        int kx = ix % 2;
         if (ray.hit.x >= 0) {
             isKxSolid =  kx == 0;
         } else {
             isKxSolid = kx != 0;
         }
-        
+
         if ((isKzSolid && isKxSolid) || (!isKzSolid && !isKxSolid)) {
-            color = dark;   
+            color = dark;
         } else {
             color = light;
         }
@@ -92,11 +93,14 @@ glm::vec3 trace(Ray ray, int step)
 
     //OBJECT'S COLOUR
 	// color = obj->getColor();
-    
-    // SET COLOR WITH LIGHTING
-    color = obj->lighting(lightPos, -ray.dir, ray.hit);
 
-    // ADD SHADOWS
+    // SET COLOR WITH LIGHTINGS
+    glm::vec3 ambinetColor = glm::vec3 (0.2, 0.2, 0.2) * obj->getColor();
+    color = obj->lighting(lightPos, -ray.dir, ray.hit);
+    //    color = color +  obj->lighting(extraLightPos, -ray.dir, ray.hit);
+    //    color = color - ambinetColor;
+    
+    // ADD 1ST SHADOW
     glm::vec3 lightVec = lightPos - ray.hit;
     Ray shadowRay(ray.hit, lightVec);  // Create a shadow ray
     shadowRay.closestPt(sceneObjects);  // find the closest point of intersect
@@ -107,12 +111,14 @@ glm::vec3 trace(Ray ray, int step)
         bool isRefractObj = sceneObjects[shadowRay.index]->isRefractive();
         bool notSelfShadow = !(ray.index == shadowRay.index);
         if (notSelfShadow && (isTranspObj || isRefractObj)) {
-            color = 0.65f * obj->getColor();
+            color = 0.5f * obj->getColor();
         } else {
             //set color to be shadow. 0.2 = ambient scale factor
-            color = 0.2f * obj->getColor(); 
+            color = 0.2f * obj->getColor();
         }
     }
+
+    //
 
     // ADD REFLECTIVITY
     if (obj->isReflective() && step < MAX_STEPS)
@@ -135,7 +141,7 @@ glm::vec3 trace(Ray ray, int step)
         glm::vec3 transpColor = trace(transpRay, step + 1);
         color = color + (transpCoeff * transpColor);
     }
-    
+
 
 	return color;
 }
@@ -199,8 +205,56 @@ void initialize()
 
     glClearColor(0, 0, 0, 1);
 
-    // 0:sphere 1 (blue reflective)
-    Sphere *sphere1 = new Sphere(glm::vec3(-8.0, 0.0, -70.0), 9.0);
+    // 0:floor plane
+    Plane *floor = new Plane (glm::vec3(-50., -15, -20),  // Point A
+                              glm::vec3(50., -15, -20),  // Point B
+                              glm::vec3(50., -15, -200),  // Point C
+                              glm::vec3(-50., -15, -200));  // Point D
+    floor->setColor(glm::vec3(0.8, 0.8, 0));
+    floor->setSpecularity(false);  // turnoff specularity property
+    sceneObjects.push_back(floor);
+
+    // texturing
+    // texture = TextureBMP("Butterfly.bmp");
+
+    // 1: ceiling
+    Plane *ceiling = new Plane (glm::vec3(-50., 31, -20),  // Point A
+                                glm::vec3(50., 31, -20),  // Point B
+                                glm::vec3(50., 31, -200),  // Point C
+                                glm::vec3(-50., 31, -200));  // Point D
+    ceiling->setColor(glm::vec3(1, 1, 1));
+    ceiling->setSpecularity(false);  // turnoff specularity property
+    sceneObjects.push_back(ceiling);
+
+    // 2:left wall
+    Plane *leftWall = new Plane (glm::vec3(-50., -15, -20),  // Point A
+                                 glm::vec3(-50., -15, -200),  // Point B
+                                 glm::vec3(-50., 85, -200),  // Point C
+                                 glm::vec3(-50., 85, -20));  // Point D
+    leftWall->setColor(glm::vec3(0.8, 0.8, 0.8));
+    leftWall->setSpecularity(false);  // turnoff specularity property
+    sceneObjects.push_back(leftWall);
+
+    // 3:right wall
+    Plane *rightWall = new Plane (glm::vec3(50., -15, -200),  // Point B
+                                  glm::vec3(50., -15, -20),   // Point A
+                                  glm::vec3(50., 85, -20),    // Point D
+                                  glm::vec3(50., 85, -200));  // Point C
+    rightWall->setColor(glm::vec3(0.8, 0.8, 0.8));
+    rightWall->setSpecularity(false);  // turnoff specularity property
+    sceneObjects.push_back(rightWall);
+
+    // 4:back wall
+    Plane *backWall = new Plane (glm::vec3(-50., -15, -200),  // Point A
+                                 glm::vec3(50., -15, -200),  // Point B
+                                 glm::vec3(50., 85, -200),  // Point C
+                                 glm::vec3(-50., 85, -200));  // Point D
+    backWall->setColor(glm::vec3(0.5, 0.5, 0.5));
+    backWall->setSpecularity(false);  // turnoff specularity property
+    sceneObjects.push_back(backWall);
+
+    // 2:sphere 1 (blue reflective)
+    Sphere *sphere1 = new Sphere(glm::vec3(-8.0, 0.0, -70.0), 7.0);
 	sphere1->setColor(glm::vec3(0, 0, 1));   //Set colour to blue
 	sceneObjects.push_back(sphere1);		 //Add sphere to scene objects
     // sphere1->setSpecularity(false);      // suppress reflections
@@ -208,45 +262,90 @@ void initialize()
     sphere1->setReflectivity(true, 0.8);   // set reflectivity
 
     // 1:sphere 2 (red solid reflective)
-    Sphere *sphere2 = new Sphere(glm::vec3(2.0, -7.0, -44.0), 4.0);
+    Sphere *sphere2 = new Sphere(glm::vec3(2.0, -7.0, -54.0), 4.0);
 	sphere2->setColor(glm::vec3(1, 0, 0));   //Set colour to red
 	sceneObjects.push_back(sphere2);		 //Add sphere to scene objects
     sphere2->setReflectivity(true, 0.8);
 
-    // 2:sphere 3 (transparent blue)
-    Sphere *sphere3 = new Sphere(glm::vec3(-10.0, -7.0, -45.0), 5.0);
-	sphere3->setColor(glm::vec3(0.2, 0.6, 0.2));   //Set colour to transparent
+    // 2:sphere 3 (green transparent reflective)
+    Sphere *sphere3 = new Sphere(glm::vec3(-10.0, -7.0, -55.0), 5.0);
+	sphere3->setColor(glm::vec3(0.2, 0.4, 0.2));   //Set colour to transparent
 	sceneObjects.push_back(sphere3);		 //Add sphere to scene objects
-    //sphere3->setReflectivity(true, 0.8);
-    sphere3->setTransparency(true, 0.8);
+    sphere3->setReflectivity(true, 0.1);
+    sphere3->setTransparency(true, 0.6);
 
     // 3:sphere 4 (Cyan solid reflective)
-    Sphere *sphere4 = new Sphere(glm::vec3(11.0, -7.0, -43.0), 3.0);
+    Sphere *sphere4 = new Sphere(glm::vec3(11.0, -7.0, -53.0), 3.0);
 	sphere4->setColor(glm::vec3(0, 1, 1));   //Set colour to Cyan
 	sceneObjects.push_back(sphere4);		 //Add sphere to scene objects
     sphere4->setReflectivity(true, 0.8);
 
-    // 4:plane
-    Plane *plane = new Plane (glm::vec3(-30., -15, -20),  // Point A
-                              glm::vec3(30., -15, -20),  // Point B
-                              glm::vec3(30., -15, -200),  // Point C
-                              glm::vec3(-30., -15, -200));  // Point D
-    plane->setColor(glm::vec3(0.8, 0.8, 0));
-    plane->setSpecularity(false);  // turnoff specularity property
-    sceneObjects.push_back(plane);
-
-    // texturing
-    // texture = TextureBMP("Butterfly.bmp");
-
-    // 5:pyramid
-    Plane *pyramid = new Plane (glm::vec3(-0.0000000001, 15, -50),  // Point A
-                                glm::vec3(0.00000000001, 15, -50),  // Point B
-                                glm::vec3(15., 15, -100),  // Point C
-                                glm::vec3(-15., 15, -100));  // Point D
-    pyramid->setColor(glm::vec3(0.8, 0.8, 0.8));
-    pyramid->setSpecularity(false);  // turnoff specularity property
-    sceneObjects.push_back(pyramid);    
+   
     
+    // 5,6,7,8,9:pyramid
+    float pyraHeight = 5;
+    float pyraSize = 6;
+    glm::vec3 pyraColor = glm::vec3(0.1, 0.1, 0.5);
+    glm::vec3 pyraColorAlt = glm::vec3(0.5, 0.1, 0.1);
+    glm::vec3 pyraPos = glm::vec3 (12, -13, -40);
+    glm::vec3 pyraTopV = glm::vec3(pyraPos[0],
+                                   pyraPos[1]+pyraHeight,
+                                   pyraPos[2]);
+    // 5:pyramid base
+    glm::vec3 pyraBaseA = glm::vec3(pyraPos[0] - 0.5 * pyraSize,
+                                    pyraPos[1],
+                                    pyraPos[2] + 0.5 * pyraSize);
+    glm::vec3 pyraBaseB = glm::vec3(pyraPos[0] + 0.5 * pyraSize,
+                                    pyraPos[1],
+                                    pyraPos[2] + 0.5 * pyraSize);
+    glm::vec3 pyraBaseC = glm::vec3(pyraPos[0] + 0.5 * pyraSize,
+                                    pyraPos[1],
+                                    pyraPos[2] - 0.5 * pyraSize);
+    glm::vec3 pyraBaseD = glm::vec3(pyraPos[0] - 0.5 * pyraSize,
+                                    pyraPos[1],
+                                    pyraPos[2] - 0.5 * pyraSize);
+    Plane *pyraBase = new Plane (pyraBaseA,
+                                 pyraBaseB,
+                                 pyraBaseC,
+                                 pyraBaseD);
+    pyraBase->setColor(pyraColor);
+    //pyraBase->setReflectivity(true, 0.2);
+    sceneObjects.push_back(pyraBase);
+    // 6:pyramid front plane
+    Plane *pyraFront = new Plane(pyraBaseA,
+                                 pyraBaseB,
+                                 pyraTopV);
+    pyraFront->setColor(pyraColor);
+    pyraFront->setReflectivity(true, 0.6);
+    sceneObjects.push_back(pyraFront);
+    //7:pyramid left plane
+    Plane *pyraLeft = new Plane(pyraBaseD,
+                                pyraBaseA,
+                                pyraTopV);
+    pyraLeft->setColor(pyraColorAlt);
+    pyraLeft->setReflectivity(true, 0.6);
+    sceneObjects.push_back(pyraLeft);
+    //8:pyramid right plane
+    Plane *pyraRight = new Plane(pyraBaseB,
+                                 pyraBaseC,
+                                 pyraTopV);
+    pyraRight->setColor(pyraColorAlt);
+    pyraRight->setReflectivity(true, 0.6);
+    sceneObjects.push_back(pyraRight);    
+    //9:pyramid back plane
+    Plane *pyraBack = new Plane(pyraBaseC,
+                                pyraBaseD,
+                                pyraTopV);
+    pyraBack->setColor(pyraColor);
+    pyraBack->setReflectivity(true, 0.6);
+    sceneObjects.push_back(pyraBack);
+
+    // 10:sphere 5 (silver reflective)
+    Sphere *sphere5 = new Sphere(glm::vec3(12.0, -8.5, -35.0), 1.0);
+	sphere5->setColor(glm::vec3(0.1, 0.1, 0));   //Set colour to Cyan
+	sceneObjects.push_back(sphere5);		 //Add sphere to scene objects
+    sphere5->setReflectivity(true, 0.6);    
+
 }
 
 
