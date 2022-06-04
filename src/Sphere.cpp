@@ -32,6 +32,7 @@ float Sphere::intersect(glm::vec3 p0, glm::vec3 dir)
 	else return t1;
 }
 
+
 /**
 * Returns the unit normal vector at a given point.
 * Assumption: The input point p lies on the sphere.
