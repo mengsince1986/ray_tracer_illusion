@@ -14,16 +14,16 @@
 */
 float Sphere::intersect(glm::vec3 p0, glm::vec3 dir)
 {
-    glm::vec3 vdif = p0 - center;   //Vector s (see Slide 28)
-    float b = glm::dot(dir, vdif);
-    float len = glm::length(vdif);
-    float c = len*len - radius*radius;
-    float delta = b*b - c;
+    glm::vec3 vdif = p0 - center;   //Vector s=p0-C (see Slide 28)
+    float b = glm::dot(dir, vdif); // b -> s.d
+    float len = glm::length(vdif); // len = sqrt(x^2 + y^2 + z^2)
+    float c = len*len - radius*radius;  // len * len == s.s = x^2 + y^2 + z^2
+    float delta = b*b - c; // b * b = (s.d)^2, c = (s.s) + r^2
    
 	if(delta < 0.001) return -1.0;    //includes zero and negative values
 
-    float t1 = -b - sqrt(delta);
-    float t2 = -b + sqrt(delta);
+    float t1 = -b - sqrt(delta); // intersection 1
+    float t2 = -b + sqrt(delta); // intersection 2
 
 	if (t1 < 0)
 	{
