@@ -9,18 +9,6 @@
 #include "Cylinder.h"
 #include <math.h>
 
-#include <iostream>
-#include <cmath>
-#include <vector>
-#include <glm/glm.hpp>
-#include "Sphere.h"
-#include "Plane.h"
-#include "Cylinder.h"
-#include "SceneObject.h"
-#include "Ray.h"
-#include "TextureBMP.h"
-#include <GL/freeglut.h>
-
 /**
 * Cylinder's intersection method. The input is a ray.
 */

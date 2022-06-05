@@ -19,13 +19,13 @@
 using namespace std;
 
 const float EDIST = 40.0;
-const int NUMDIV = 800;
+const int NUMDIV = 600;
 const int MAX_STEPS = 50;
 const float XMIN = -20.0;
 const float XMAX = 20.0;
 const float YMIN = -20.0;
 const float YMAX = 20.0;
-bool antiAliasing = true;
+bool antiAliasing = true; // antiAliasing Switch
 
 vector<SceneObject*> sceneObjects;
 
@@ -153,7 +153,7 @@ glm::vec3 trace(Ray ray, int step)
             color = 0.6f * obj->getColor();
         } else {
             //set color to be shadow. 0.2 = ambient scale factor
-            color = 0.34f * obj->getColor();
+            color = 0.4f * obj->getColor();
         }
     } else if (shadowRay2.index > -1 && shadowRay2.dist < lightDist2) { // check if in shadow2
         // check if transparent/refractive object or selfShadowed
@@ -219,12 +219,14 @@ glm::vec3 trace(Ray ray, int step)
 // In a ray tracing application, it just displays the ray traced image by drawing
 // each cell as a quad.
 //---------------------------------------------------------------------------------------
+
 void display()
 {
 	float xp, yp;  //grid point
 	float cellX = (XMAX - XMIN) / NUMDIV;  //cell width
 	float cellY = (YMAX - YMIN) / NUMDIV;  //cell height
 	glm::vec3 eye(0., 0., 0.);
+    glm::vec3 col;
 
 	glClear(GL_COLOR_BUFFER_BIT);
     glMatrixMode(GL_MODELVIEW);
@@ -238,7 +240,7 @@ void display()
 		for(int j = 0; j < NUMDIV; j++)
 		{
             yp = YMIN + j * cellY;
-            glm::vec3 col;
+
             if (antiAliasing) {
             // ray-1
             glm::vec3 dir1(xp + 0.25 * cellX, yp + 0.25 * cellY, -EDIST);
@@ -257,10 +259,11 @@ void display()
 		    Ray ray4 = Ray(eye, dir1);
 		    glm::vec3 col4 = trace (ray4, 1);            
             // Get average color
+           
             col = glm::vec3 ((col1.r + col2.r + col3.r + col4.r) * 0.25,
                              (col1.g + col2.g + col3.g + col4.g) * 0.25,
                              (col1.b + col2.b + col3.b + col4.b) * 0.25);
-                
+           
             } else {
             glm::vec3 dir(xp + 0.5 * cellX, yp + 0.5 * cellY, -EDIST);
 		    Ray ray = Ray(eye, dir);
