@@ -20,6 +20,8 @@ This project creates a set of 3D objects with global illumination using the ray 
 
 ## Building Commands
 
+(Tested on Linux Mint 20)
+
 **Step 1**: Go to src folder and start a terminal at the location
 
 **Step 2**: Run `cmake CMakeLists.txt`.
